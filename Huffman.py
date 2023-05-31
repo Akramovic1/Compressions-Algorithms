@@ -1,9 +1,12 @@
-import os
-import heapq
-from collections import Counter
-from typing import Dict, Tuple
 import hashlib
+from collections import Counter
+import heapq
+from typing import Dict
+from tqdm import tqdm
+import os
 import pickle
+from termcolor import cprint
+
 
 class HuffmanNode:
     def __init__(self, symbol: int, frequency: int):
@@ -17,7 +20,6 @@ class HuffmanNode:
 
 
 def build_huffman_tree(frequencies: Counter) -> HuffmanNode:
-    """Builds a Huffman tree based on the given frequencies."""
     heap = [HuffmanNode(symbol, frequency) for symbol, frequency in frequencies.items()]
     heapq.heapify(heap)
 
@@ -31,8 +33,8 @@ def build_huffman_tree(frequencies: Counter) -> HuffmanNode:
 
     return heap[0]
 
+
 def generate_huffman_codes(node: HuffmanNode, code: str ='', code_mapping: Dict[int, str] =None) -> Dict[int, str]:
-    """Generates a Huffman code mapping based on the given Huffman tree."""
     if code_mapping is None:
         code_mapping = dict()
 
@@ -44,8 +46,9 @@ def generate_huffman_codes(node: HuffmanNode, code: str ='', code_mapping: Dict[
 
     return code_mapping
 
+
 def huffman_encode_file(file_path: str, output_path: str):
-    """Encodes a file using Huffman encoding."""
+    cprint(f'Input file size: {os.stat(file_path).st_size}', 'magenta')
     with open(file_path, 'rb') as file:
         data = file.read()
 
@@ -53,22 +56,20 @@ def huffman_encode_file(file_path: str, output_path: str):
     huffman_tree = build_huffman_tree(frequencies)
     huffman_codes = generate_huffman_codes(huffman_tree)
 
-    encoded_bits = ''.join(huffman_codes[symbol] for symbol in data)
+    encoded_bits = ''.join(huffman_codes[symbol] for symbol in tqdm(data, desc='Encoding'))
 
-    # Pad the encoded bits with zeros to make the length a multiple of 8
     num_padding_bits = 8 - len(encoded_bits) % 8
     padded_bits = encoded_bits + '0' * num_padding_bits
 
-    # Convert the padded bits to bytes
     encoded_data = bytes(int(padded_bits[i:i + 8], 2) for i in range(0, len(padded_bits), 8))
 
-    # Save encoded data to a file
     with open(output_path, 'wb') as file:
         pickle.dump((encoded_data, huffman_codes, num_padding_bits), file)
+    cprint(f'Output file size: {os.stat(output_path).st_size}', 'green')
 
 
 def huffman_decode_file(file_path: str, output_path: str):
-    """Decodes a Huffman-encoded file."""
+    cprint(f'Input file size: {os.stat(file_path).st_size}', 'cyan')
     with open(file_path, 'rb') as file:
         encoded_data, huffman_codes, num_padding_bits = pickle.load(file)
 
@@ -76,13 +77,10 @@ def huffman_decode_file(file_path: str, output_path: str):
     inv_huffman_codes = {code: symbol for symbol, code in huffman_codes.items()}
     buffer = ''
 
-    # Convert the bytes to a string of bits
     bit_string = ''.join(format(byte, '08b') for byte in encoded_data)
-
-    # Remove padding bits
     bit_string = bit_string[:-num_padding_bits]
 
-    for bit in bit_string:
+    for bit in tqdm(bit_string, desc='Decoding'):
         buffer += bit
         if buffer in inv_huffman_codes:
             decoded_data.append(inv_huffman_codes[buffer])
@@ -90,9 +88,9 @@ def huffman_decode_file(file_path: str, output_path: str):
 
     decoded_data = bytes(decoded_data)
 
-    # Save decoded data to a file
     with open(output_path, 'wb') as file:
         file.write(decoded_data)
+    cprint(f'Output file size: {os.stat(output_path).st_size}', 'blue')
 
 def calculate_file_hash(file_path: str, block_size=65536) -> str:
     """Calculate the SHA256 hash of a file."""

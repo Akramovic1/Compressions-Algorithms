@@ -1,44 +1,35 @@
 import os
 import hashlib
-import collections
-import struct
-import lzma
-
-
-class TrieNode:
-    def __init__(self):
-        self.children = {}
-        self.value = None
+from tqdm import tqdm
+from termcolor import cprint
 
 
 def lzw_encode_file(input_file_path, output_file_path):
+    cprint(f'Input file size: {os.stat(input_file_path).st_size}', 'magenta')
     with open(input_file_path, 'rb') as input_file, open(output_file_path, 'wb') as output_file:
-        # Initialize dictionary with individual bytes
         dictionary = {bytes([i]): i for i in range(256)}
         next_code = 256
         buffer = b""
-
-        for byte in input_file.read():
+        for byte in tqdm(input_file.read(), desc='Encoding'):
             buffer += bytes([byte])
             if buffer not in dictionary:
                 output_file.write(dictionary[buffer[:-1]].to_bytes(3, 'big'))
-                if next_code < 2 ** 24 - 1:  # Limit dictionary size to prevent memory issues
+                if next_code < 2 ** 24 - 1:
                     dictionary[buffer] = next_code
                     next_code += 1
                 buffer = buffer[-1:]
-
         if buffer:
             output_file.write(dictionary[buffer].to_bytes(3, 'big'))
+    cprint(f'Output file size: {os.stat(output_file_path).st_size}', 'green')
 
 
 def lzw_decode_file(input_file_path, output_file_path):
+    cprint(f'Input file size: {os.stat(input_file_path).st_size}', 'cyan')
     with open(input_file_path, 'rb') as input_file, open(output_file_path, 'wb') as output_file:
-        # Initialize dictionary with individual bytes
         dictionary = {i: bytes([i]) for i in range(256)}
         next_code = 256
         buffer = b""
         prev_code = None
-
         chunk = input_file.read(3)
         while chunk:
             code = int.from_bytes(chunk, 'big')
@@ -57,7 +48,7 @@ def lzw_decode_file(input_file_path, output_file_path):
 
             prev_code = code
             chunk = input_file.read(3)
-
+    cprint(f'Output file size: {os.stat(output_file_path).st_size}', 'blue')
 
 
 def calculate_file_hash(file_path: str, block_size=65536) -> str:
@@ -67,6 +58,7 @@ def calculate_file_hash(file_path: str, block_size=65536) -> str:
         for block in iter(lambda: f.read(block_size), b''):
             file_hash.update(block)
     return file_hash.hexdigest()
+
 
 def test_lzw_coding():
     # input_file_path = input("Enter the input file path: ")
@@ -109,6 +101,7 @@ def test_lzw_coding():
     print('File hashes match')
     print("Decompressed file matches original")
 
+
 def test_lzw_encoding_and_decoding():
     input_file = "large_text_file.txt"
     encoded_file = "test_encoded.lzw"
@@ -131,6 +124,7 @@ def create_large_text_file(file_path, size_in_mb):
     with open(file_path, 'w') as f:
         for _ in range(size_in_mb * 1024 * 1024):
             f.write('A')
+
 
 if __name__ == '__main__':
     test_lzw_coding()

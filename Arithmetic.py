@@ -1,16 +1,18 @@
 import hashlib
-import os
 from fractions import Fraction
-from tqdm import tqdm
 import math
-from bisect import bisect_right
-from tqdm import trange
+from collections import Counter
 from hashlib import md5
+from bisect import bisect_right
+from tqdm import tqdm, trange
 from termcolor import cprint
+import os
 
 class ArithmeticEncoder:
     def __init__(self, content):
         self.content = content
+        self.symbol_counts = Counter(content)
+        self.content_len = len(content)
 
     def get_symbol_probability(self, symbol):
         content_len = len(self.content)
@@ -20,7 +22,7 @@ class ArithmeticEncoder:
 
     def get_symbols_probabilities(self):
         symbols = [*set(self.content)]
-        pairs = [[s, self.get_symbol_probability(s)] for s in symbols]
+        pairs = [[s, Fraction(self.symbol_counts[s], self.content_len)] for s in symbols]
         pairs = sorted(pairs, key=lambda x: x[1], reverse=True)
         return pairs
 
@@ -80,8 +82,6 @@ class ArithmeticEncoder:
         return symbols_dict
 
     def encode(self):
-        content_md5 = md5(self.content).hexdigest()
-        cprint(f'Input file MD5 sum: {content_md5}', 'yellow')
         symbols_dict = self.get_symbols_dict()
 
         current_range_start = Fraction(0, 1)
@@ -268,7 +268,7 @@ def calculate_file_hash(file_path: str, block_size=65536) -> str:
 
 def test_arthimetic_coding():
     # input_file_path = input("Enter the input file path: ")
-    input_file_path = "large_text_file.txt"
+    input_file_path = "small_text_file.txt"
     file_name, file_extension = input_file_path.split(".")
 
     encoded_file_path = f'{file_name}_encoded_huffman.bin'
