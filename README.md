@@ -21,7 +21,7 @@ The fundamental idea behind LZW, and dictionary-based compression algorithms in 
 In LZW, this is achieved by maintaining a dictionary of sequences that have been encountered previously in the input data. As data is read, if the current data sequence (including the current symbol) is found in the dictionary, it continues reading. When it encounters a sequence not in the dictionary, it outputs the code for the longest prefix that was in the dictionary, adds a new entry to the dictionary for the encountered sequence, and then starts a new sequence with the current symbol.
 
 
-## LZW Coding
+## Arithmetic Coding
 ### Theory Behind Arithmetic Coding
 Arithmetic coding is based on the principles of information theory. It operates by maintaining a range of probabilities for all possible symbols in the input data. The range is then successively subdivided as input symbols are encoded, with the range corresponding to the current symbol being used as the new overall range.
 
